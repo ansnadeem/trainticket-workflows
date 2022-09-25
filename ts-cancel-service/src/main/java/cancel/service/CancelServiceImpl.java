@@ -23,20 +23,20 @@ import java.util.concurrent.Future;
 @Service
 public class CancelServiceImpl implements CancelService {
 
-	private String hostname = "172.25.234.77";
+	private String hostname = "134.129.91.178";
+
 	@Autowired
 	private RestTemplate restTemplate = new RestTemplate();
 
 	@Override
-	public CancelOrderResult cancelOrder(CancelOrderInfo info, String loginToken, String loginId) throws Exception { // TODO
-																														// Workflow
+	public CancelOrderResult cancelOrder(CancelOrderInfo info, String loginToken, String loginId) throws Exception {
 																														// Initiator
 		// WorkflowServiceStubs is a gRPC stubs wrapper that talks to the local Docker
 		// instance of the Temporal server.
 		WorkflowServiceStubsOptions stubOptions = WorkflowServiceStubsOptions.newBuilder().setTarget(hostname+":7233")
 				.build();
-		WorkflowServiceStubs service = WorkflowServiceStubs.newInstance(stubOptions);
-		WorkflowOptions options = WorkflowOptions.newBuilder().setTaskQueue("DEFAULT")
+		WorkflowServiceStubs service = WorkflowServiceStubs.newServiceStubs(stubOptions);
+		WorkflowOptions options = WorkflowOptions.newBuilder().setTaskQueue("default")
 				// A WorkflowId prevents this it from having duplicate instances, remove it to
 				// duplicate.
 				.setWorkflowId("cancel-order-workflow").build();
