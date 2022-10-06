@@ -1,11 +1,14 @@
 package preserve.service;
 
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
+import org.springframework.scheduling.annotation.AsyncResult;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import preserve.domain.*;
 import java.util.Date;
 import java.util.UUID;
+import java.util.concurrent.Future;
 
 @Service
 public class PreserveServiceImpl implements PreserveService{
@@ -14,7 +17,16 @@ public class PreserveServiceImpl implements PreserveService{
     private RestTemplate restTemplate;
 
     @Override
-    public OrderTicketsResult preserve(OrderTicketsInfo oti,String accountId,String loginToken){
+    public OrderTicketsResult preserve(OrderTicketsInfo oti, String accountId, String loginToken){
+
+        //random sleep
+        long sleep = (long) (Math.random() * 10000);
+        try {
+            Thread.sleep(sleep);
+        } catch (InterruptedException e1) {
+            e1.printStackTrace();
+        }
+
         VerifyResult tokenResult = verifySsoLogin(loginToken);
         OrderTicketsResult otr = new OrderTicketsResult();
         if(tokenResult.isStatus() == true){
