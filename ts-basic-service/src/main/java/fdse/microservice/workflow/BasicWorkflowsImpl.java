@@ -34,7 +34,13 @@ public class BasicWorkflowsImpl implements BasicWorkflows {
 
     @Override
     public ResultForTravel QueryForTravelWorkflow(QueryForTravel info) {
-
+        System.out.println("[Basic Info][Query For Travel] Sleep Begin");
+        try{
+            Workflow.sleep(10000);
+        }catch (Exception e){
+            e.printStackTrace();
+        }
+        System.out.println("[Basic Info][Query For Travel] Sleep End");
         ResultForTravel result = new ResultForTravel();
         result.setStatus(true);
 //        boolean startingPlaceExist = restTemplate.postForObject(
