@@ -4,6 +4,15 @@ import fdse.microservice.domain.*;
 
 
 public interface BasicService {
-    ResultForTravel queryForTravel(QueryForTravel info);
+    
     String queryForStationId(QueryStation info);
+
+    boolean checkStationExists(String stationName);
+
+    TrainType queryTrainType(String trainTypeId);
+
+    Route getRouteByRouteId(String routeId);
+
+    PriceConfig queryPriceConfigByRouteIdAndTrainType(String routeId,String trainType);
+
 }
