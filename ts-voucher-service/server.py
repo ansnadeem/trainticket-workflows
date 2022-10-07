@@ -16,8 +16,12 @@ class GetVoucherHandler(tornado.web.RequestHandler):
         #根据订单id查询是否存在对应的凭证
         queryVoucher = self.fetchVoucherByOrderId(orderId)
 
+        print(data)
+        print('\n')
+
         if(queryVoucher == None):
             #根据订单id请求订单的详细信息
+            print(data["orderId"])
             orderResult = self.queryOrderByIdAndType(orderId,type)
             order = orderResult['order']
 
@@ -44,13 +48,54 @@ class GetVoucherHandler(tornado.web.RequestHandler):
             #再次查询，可以获得刚刚插入的凭证信息
             self.write(self.fetchVoucherByOrderId(orderId))
         else:
-            self.write(queryVoucher)
+            operation = data["operation"]
+            if(operation == 2):
+                #查询到voucher的信息
+                queryVoucherNew = self.fetchVoucherByOrderId(orderId)
+                #获取到voucher的ID
+                dataVoucher = json.loads(queryVoucherNew)
+                voucherId = dataVoucher['voucher_id']
+                #执行SQL
+                configDelete = {
+                    'host':'ts-voucher-mysql',
+                    'port':3306,
+                    'user':'root',
+                    'password':'root',
+                    'db':'voucherservice'
+                }
+                connDelete = pymysql.connect(**configDelete)
+                curDelete = connDelete.cursor()
+                voucherResult = {}
+                try:
+                    sqlDelete = 'DELETE FROM voucher WHERE voucherId = %s;'
+                    curDelete.execute(sqlDelete,(voucherId))
+                    connDelete.commit()
+                    #检查是否执行成功并返回结果
+                    queryVoucherCheck = self.fetchVoucherByOrderId(orderId)
+                    if(queryVoucherCheck == None):
+                        voucherResult['status'] = True
+                        voucherResult['message'] = "Success."
+                    else:
+                        voucherResult['status'] = False
+                        voucherResult['message'] = "Retry."
+                except Exception as e:
+                    voucherResult['status'] = False
+                    voucherResult['message'] = "Retry."
+                finally:
+                    voucherResult['status'] = False
+                    voucherResult['message'] = "Retry."
+                    connDelete.close()
+                voucherResultStr = json.dumps(voucherResult)
+                print(voucherResultStr)
+                self.write(voucherResultStr)
+            else:
+                self.write(queryVoucher)
 
     def queryOrderByIdAndType(self,orderId,type):
         type = int(type)
         #普通列车
         if(type == 0):
-            url='http://ts-order-other-service:12032/order/getById'
+            url='http://ts-order-other-service:12032/orderOther/getById'
         else:
             url='http://ts-order-service:12031/order/getById'
         values ={'orderId':orderId}
