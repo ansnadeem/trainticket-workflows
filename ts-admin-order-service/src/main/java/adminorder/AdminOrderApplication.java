@@ -18,8 +18,8 @@ public class AdminOrderApplication {
         SpringApplication.run(AdminOrderApplication.class, args);
     }
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build();
+//    }
 }

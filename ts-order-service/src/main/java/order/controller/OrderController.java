@@ -21,7 +21,7 @@ public class OrderController {
         return "Welcome to [ Order Service ] !";
     }
 
-
+    /***************************For Normal Use***************************/
 
     @RequestMapping(value="/order/getTicketListByDateAndTripId", method = RequestMethod.POST)
     public LeftTicketInfo getTicketListByDateAndTripId(@RequestBody SeatRequest seatRequest){
@@ -141,7 +141,7 @@ public class OrderController {
         return orderService.deleteOrder(info);
     }
 
-
+    /***************For super admin(Single Service Test*******************/
 
     @CrossOrigin(origins = "*")
     @RequestMapping(path="/order/findAll", method = RequestMethod.GET)
@@ -153,7 +153,7 @@ public class OrderController {
     private VerifyResult verifySsoLogin(String loginToken){
         System.out.println("[Order Service][Verify Login] Verifying....");
         VerifyResult tokenResult = restTemplate.getForObject(
-                "http://ts-sso-service:12349/verifyLoginToken/" + loginToken,
+                "https://ts-sso-service:12349/verifyLoginToken/" + loginToken,
                 VerifyResult.class);
         return tokenResult;
     }

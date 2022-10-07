@@ -104,7 +104,7 @@ public class AssuranceController {
     private VerifyResult verifySsoLogin(String loginToken){
         System.out.println("[Assurance Service][Verify Login] Verifying....");
         VerifyResult tokenResult = restTemplate.getForObject(
-                "http://ts-sso-service:12349/verifyLoginToken/" + loginToken,
+                "https://ts-sso-service:12349/verifyLoginToken/" + loginToken,
                 VerifyResult.class);
         return tokenResult;
     }

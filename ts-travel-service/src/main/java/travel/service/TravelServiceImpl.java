@@ -145,18 +145,22 @@ public class TravelServiceImpl implements TravelService{
     @Override
     public ArrayList<TripResponse> query(QueryInfo info){
 
+        //获取要查询的车次的起始站和到达站。这里收到的起始站和到达站都是站的名称，所以需要发两个请求转换成站的id
         String startingPlaceName = info.getStartingPlace();
         String endPlaceName = info.getEndPlace();
         String startingPlaceId = queryForStationId(startingPlaceName);
         String endPlaceId = queryForStationId(endPlaceName);
 
-
+        //这个是最终的结果
         ArrayList<TripResponse> list = new ArrayList<>();
 
+        //查询所有的车次信息
         ArrayList<Trip> allTripList = repository.findAll();
         for(Trip tempTrip : allTripList){
+            //拿到这个车次的具体路线表
             Route tempRoute = getRouteByRouteId(tempTrip.getRouteId());
-
+            //检查这个车次的路线表。检查要求的起始站和到达站在不在车次路线的停靠站列表中
+            //并检查起始站的位置在到达站之前。满足以上条件的车次被加入返回列表
             if(tempRoute.getStations().contains(startingPlaceId) &&
                     tempRoute.getStations().contains(endPlaceId) &&
                     tempRoute.getStations().indexOf(startingPlaceId) < tempRoute.getStations().indexOf(endPlaceId)){
@@ -203,7 +207,7 @@ public class TravelServiceImpl implements TravelService{
 
     private TripResponse getTickets(Trip trip,Route route,String startingPlaceId,String endPlaceId,String startingPlaceName, String endPlaceName, Date departureTime){
 
-
+        //判断所查日期是否在当天及之后
         if(!afterToday(departureTime)){
             return null;
         }
@@ -215,17 +219,17 @@ public class TravelServiceImpl implements TravelService{
         query.setDepartureTime(departureTime);
 
         ResultForTravel resultForTravel = restTemplate.postForObject(
-                "http://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
+                "https://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
 
-
+        //车票订单_高铁动车（已购票数）
         QuerySoldTicket information = new QuerySoldTicket(departureTime,trip.getTripId().toString());
         ResultSoldTicket result = restTemplate.postForObject(
-                "http://ts-order-service:12031/order/calculate", information ,ResultSoldTicket.class);
+                "https://ts-order-service:12031/order/calculate", information ,ResultSoldTicket.class);
         if(result == null){
             System.out.println("soldticket Info doesn't exist");
             return null;
         }
-
+        //设置返回的车票信息
         TripResponse response = new TripResponse();
         if(queryForStationId(startingPlaceName).equals(trip.getStartingStationId()) &&
                 queryForStationId(endPlaceName).equals(trip.getTerminalStationId())){
@@ -247,13 +251,13 @@ public class TravelServiceImpl implements TravelService{
         response.setStartingStation(startingPlaceName);
         response.setTerminalStation(endPlaceName);
 
-
+        //计算车从起始站开出的距离
         int indexStart = route.getStations().indexOf(startingPlaceId);
         int indexEnd = route.getStations().indexOf(endPlaceId);
         int distanceStart = route.getDistances().get(indexStart) - route.getDistances().get(0);
         int distanceEnd = route.getDistances().get(indexEnd) - route.getDistances().get(0);
         TrainType trainType = getTrainType(trip.getTrainTypeId());
-
+        //根据列车平均运行速度计算列车运行时间
         int minutesStart = 60 * distanceStart / trainType.getAverageSpeed();
         int minutesEnd = 60 * distanceEnd / trainType.getAverageSpeed();
 
@@ -261,11 +265,13 @@ public class TravelServiceImpl implements TravelService{
         calendarStart.setTime(trip.getStartingTime());
         calendarStart.add(Calendar.MINUTE,minutesStart);
         response.setStartingTime(calendarStart.getTime());
+        System.out.println("[Train Service]计算时间：" + minutesStart  + " 时间:" + calendarStart.getTime().toString());
 
         Calendar calendarEnd = Calendar.getInstance();
         calendarEnd.setTime(trip.getStartingTime());
         calendarEnd.add(Calendar.MINUTE,minutesEnd);
         response.setEndTime(calendarEnd.getTime());
+        System.out.println("[Train Service]计算时间：" + minutesEnd  + " 时间:" + calendarEnd.getTime().toString());
 
         response.setTripId(new TripId(result.getTrainNumber()));
         response.setTrainTypeId(trip.getTrainTypeId());
@@ -311,7 +317,7 @@ public class TravelServiceImpl implements TravelService{
         GetTrainTypeInformation info = new GetTrainTypeInformation();
         info.setId(trainTypeId);
         TrainType trainType = restTemplate.postForObject(
-                "http://ts-train-service:14567/train/retrieve", info, TrainType.class);
+                "https://ts-train-service:14567/train/retrieve", info, TrainType.class);
         return trainType;
     }
 
@@ -319,14 +325,14 @@ public class TravelServiceImpl implements TravelService{
         QueryForStationId query = new QueryForStationId();
         query.setName(stationName);
         String id = restTemplate.postForObject(
-                "http://ts-ticketinfo-service:15681/ticketinfo/queryForStationId", query ,String.class);
+                "https://ts-ticketinfo-service:15681/ticketinfo/queryForStationId", query ,String.class);
         return id;
     }
 
     private Route getRouteByRouteId(String routeId){
         System.out.println("[Travel Service][Get Route By Id] Route ID：" + routeId);
         GetRouteResult result = restTemplate.getForObject(
-                "http://ts-route-service:11178/route/queryById/" + routeId,
+                "https://ts-route-service:11178/route/queryById/" + routeId,
                 GetRouteResult.class);
         if(result.isStatus() == false){
             System.out.println("[Travel Service][Get Route By Id] Fail." + result.getMessage());
@@ -350,7 +356,7 @@ public class TravelServiceImpl implements TravelService{
         seatRequest.setSeatType(seatType);
 
         int restNumber = restTemplate.postForObject(
-                "http://ts-seat-service:18898/seat/getLeftTicketOfInterval",
+                "https://ts-seat-service:18898/seat/getLeftTicketOfInterval",
                 seatRequest,Integer.class
         );
 

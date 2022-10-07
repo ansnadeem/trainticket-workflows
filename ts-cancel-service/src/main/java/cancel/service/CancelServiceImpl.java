@@ -1,6 +1,5 @@
 package cancel.service;
 
-import cancel.async.AsyncTask;
 import cancel.domain.*;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
@@ -14,9 +13,6 @@ public class CancelServiceImpl implements CancelService{
 
     @Autowired
     private RestTemplate restTemplate;
-
-    @Autowired
-    private AsyncTask asyncTask;
 
     @Override
     public CancelOrderResult cancelOrder(CancelOrderInfo info,String loginToken,String loginId) throws Exception{
@@ -114,10 +110,14 @@ public class CancelServiceImpl implements CancelService{
                     ChangeOrderResult changeOrderResult = cancelFromOtherOrder(changeOrderInfo);
 
 
-//
-//
+//                    /***********************Error Process Seq - Correct Part*************************/
+//                    /**
+//                     * 提示：这是正常的流程！
+//                     */
+//                    //1.首先退还订单金额
 //                    String money = calculateRefund(order);
 //                    Future<Boolean> taskDrawBackMoney = asyncTask.drawBackMoneyForOrderCan(money,loginId,order.getId().toString());
+//                    //2.然后修改订单的状态至【已取消】
 //                    Future<ChangeOrderResult> taskCancelOrder = asyncTask.updateOtherOrderStatusToCancel(changeOrderInfo);
 //
 //                    ChangeOrderResult changeOrderResult = null;
@@ -128,7 +128,7 @@ public class CancelServiceImpl implements CancelService{
 //                    changeOrderResult = taskCancelOrder.get();
 //
 //
-//
+//                    /********************************************************************************/
 
 //                    if(changeOrderResult.isStatus() == true && drawBackMoneyStatus == true){
 //                        CancelOrderResult finalResult = new CancelOrderResult();
@@ -227,7 +227,7 @@ public class CancelServiceImpl implements CancelService{
     public boolean sendEmail(NotifyInfo notifyInfo){
         System.out.println("[Cancel Order Service][Send Email]");
         boolean result = restTemplate.postForObject(
-                "http://ts-notification-service:17853/notification/order_cancel_success",
+                "https://ts-notification-service:17853/notification/order_cancel_success",
                 notifyInfo,
                 Boolean.class
         );
@@ -349,13 +349,15 @@ public class CancelServiceImpl implements CancelService{
 
     private ChangeOrderResult cancelFromOrder(ChangeOrderInfo info){
         System.out.println("[Cancel Order Service][Change Order Status] Changing....");
-        ChangeOrderResult result = restTemplate.postForObject("http://ts-order-service:12031/order/update",info,ChangeOrderResult.class);
+        ChangeOrderResult result = restTemplate.postForObject(
+                "https://ts-order-service:12031/order/update",info,ChangeOrderResult.class);
         return result;
     }
 
     private ChangeOrderResult cancelFromOtherOrder(ChangeOrderInfo info){
         System.out.println("[Cancel Order Service][Change Order Status] Changing....");
-        ChangeOrderResult result = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/update",info,ChangeOrderResult.class);
+        ChangeOrderResult result = restTemplate.postForObject(
+                "https://ts-order-other-service:12032/orderOther/update",info,ChangeOrderResult.class);
         return result;
     }
 
@@ -364,7 +366,8 @@ public class CancelServiceImpl implements CancelService{
         DrawBackInfo info = new DrawBackInfo();
         info.setMoney(money);
         info.setUserId(userId);
-        String result = restTemplate.postForObject("http://ts-inside-payment-service:18673/inside_payment/drawBack",info,String.class);
+        String result = restTemplate.postForObject(
+                "https://ts-inside-payment-service:18673/inside_payment/drawBack",info,String.class);
         if(result.equals("true")){
             return true;
         }else{
@@ -375,7 +378,7 @@ public class CancelServiceImpl implements CancelService{
     public GetAccountByIdResult getAccount(GetAccountByIdInfo info){
         System.out.println("[Cancel Order Service][Get By Id]");
         GetAccountByIdResult result = restTemplate.postForObject(
-                "http://ts-sso-service:12349/account/findById",
+                "https://ts-sso-service:12349/account/findById",
                 info,
                 GetAccountByIdResult.class
         );
@@ -385,7 +388,7 @@ public class CancelServiceImpl implements CancelService{
     private GetOrderResult getOrderByIdFromOrder(GetOrderByIdInfo info){
         System.out.println("[Cancel Order Service][Get Order] Getting....");
         GetOrderResult cor = restTemplate.postForObject(
-                "http://ts-order-service:12031/order/getById/"
+                "https://ts-order-service:12031/order/getById/"
                 ,info,GetOrderResult.class);
         return cor;
     }
@@ -393,7 +396,7 @@ public class CancelServiceImpl implements CancelService{
     private GetOrderResult getOrderByIdFromOrderOther(GetOrderByIdInfo info){
         System.out.println("[Cancel Order Service][Get Order] Getting....");
         GetOrderResult cor = restTemplate.postForObject(
-                "http://ts-order-other-service:12032/orderOther/getById/"
+                "https://ts-order-other-service:12032/orderOther/getById/"
                 ,info,GetOrderResult.class);
         return cor;
     }

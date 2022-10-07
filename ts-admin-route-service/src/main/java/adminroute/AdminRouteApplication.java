@@ -18,8 +18,8 @@ public class AdminRouteApplication {
         SpringApplication.run(AdminRouteApplication.class, args);
     }
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build();
+//    }
 }

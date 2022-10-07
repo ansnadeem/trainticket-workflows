@@ -9,7 +9,9 @@ import org.springframework.integration.annotation.IntegrationComponentScan;
 import org.springframework.scheduling.annotation.EnableAsync;
 import org.springframework.web.client.RestTemplate;
 
-
+/**
+ * Created by Chenjie Xu on 2017/6/6.
+ */
 @SpringBootApplication
 @EnableAspectJAutoProxy(proxyTargetClass = true)
 @EnableAsync
@@ -20,8 +22,8 @@ public class TicketInfoApplication {
         SpringApplication.run(TicketInfoApplication.class, args);
     }
 
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build();
+//    }
 }

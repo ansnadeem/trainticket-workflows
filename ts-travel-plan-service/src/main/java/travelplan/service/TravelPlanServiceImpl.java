@@ -215,7 +215,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
         seatRequest.setSeatType(seatType);
 
         int restNumber = restTemplate.postForObject(
-                "http://ts-seat-service:18898/seat/getLeftTicketOfInterval",
+                "https://ts-seat-service:18898/seat/getLeftTicketOfInterval",
                 seatRequest,Integer.class
                 );
 
@@ -225,7 +225,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
     private RoutePlanResults getRoutePlanResultCheapest(GetRoutePlanInfo info){
         RoutePlanResults routePlanResults =
                 restTemplate.postForObject(
-                        "http://ts-route-plan-service:14578/routePlan/cheapestRoute",
+                        "https://ts-route-plan-service:14578/routePlan/cheapestRoute",
                         info,RoutePlanResults.class
                 );
         return routePlanResults;
@@ -234,7 +234,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
     private RoutePlanResults getRoutePlanResultQuickest(GetRoutePlanInfo info){
         RoutePlanResults routePlanResults =
                 restTemplate.postForObject(
-                        "http://ts-route-plan-service:14578/routePlan/quickestRoute",
+                        "https://ts-route-plan-service:14578/routePlan/quickestRoute",
                         info,RoutePlanResults.class
                 );
         return routePlanResults;
@@ -243,7 +243,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
     private RoutePlanResults getRoutePlanResultMinStation(GetRoutePlanInfo info){
         RoutePlanResults routePlanResults =
                 restTemplate.postForObject(
-                        "http://ts-route-plan-service:14578/routePlan/minStopStations",
+                        "https://ts-route-plan-service:14578/routePlan/minStopStations",
                         info,RoutePlanResults.class
                 );
         return routePlanResults;
@@ -251,13 +251,13 @@ public class TravelPlanServiceImpl implements TravelPlanService{
 
     private ArrayList<TripResponse> tripsFromHighSpeed(QueryInfo info){
         ArrayList<TripResponse> result = new ArrayList<>();
-        result = restTemplate.postForObject("http://ts-travel-service:12346/travel/query",info,result.getClass());
+        result = restTemplate.postForObject("https://ts-travel-service:12346/travel/query",info,result.getClass());
         return result;
     }
 
     private ArrayList<TripResponse> tripsFromNormal(QueryInfo info){
         ArrayList<TripResponse> result = new ArrayList<>();
-        result = restTemplate.postForObject("http://ts-travel2-service:16346/travel2/query",info,result.getClass());
+        result = restTemplate.postForObject("https://ts-travel2-service:16346/travel2/query",info,result.getClass());
         return result;
     }
 
@@ -265,7 +265,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
         QueryForStationId query = new QueryForStationId();
         query.setName(stationName);
         String id = restTemplate.postForObject(
-                "http://ts-ticketinfo-service:15681/ticketinfo/queryForStationId", query ,String.class);
+                "https://ts-ticketinfo-service:15681/ticketinfo/queryForStationId", query ,String.class);
         return id;
     }
 
@@ -283,7 +283,7 @@ public class TravelPlanServiceImpl implements TravelPlanService{
         QueryByStationIdForName queryByStationIdForName = new QueryByStationIdForName(stationId);
 
         return restTemplate.postForObject(
-                "http://ts-station-service:12345/station/queryByIdForName",
+                "https://ts-station-service:12345/station/queryByIdForName",
                 queryByStationIdForName,String.class
         );
     }

@@ -113,7 +113,7 @@ public class PreserveServiceImpl implements PreserveService{
             query.setDepartureTime(new Date());
 
             ResultForTravel resultForTravel = restTemplate.postForObject(
-                    "http://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
+                    "https://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
 
             order.setSeatClass(oti.getSeatType());
             System.out.println("[Preserve Service][Order] Order Travel Date:" + oti.getDate().toString());
@@ -260,7 +260,7 @@ public class PreserveServiceImpl implements PreserveService{
         seatRequest.setDestStation(endStataionId);
         seatRequest.setSeatType(seatType);
         Ticket ticket = restTemplate.postForObject(
-                "http://ts-seat-service:18898/seat/getSeat"
+                "https://ts-seat-service:18898/seat/getSeat"
                 ,seatRequest,Ticket.class);
         return ticket;
     }
@@ -268,7 +268,7 @@ public class PreserveServiceImpl implements PreserveService{
     public boolean sendEmail(NotifyInfo notifyInfo){
         System.out.println("[Preserve Service][Send Email]");
         boolean result = restTemplate.postForObject(
-                "http://ts-notification-service:17853/notification/order_cancel_success",
+                "https://ts-notification-service:17853/notification/order_cancel_success",
                 notifyInfo,
                 Boolean.class
         );
@@ -278,7 +278,7 @@ public class PreserveServiceImpl implements PreserveService{
     public GetAccountByIdResult getAccount(GetAccountByIdInfo info){
         System.out.println("[Cancel Order Service][Get By Id]");
         GetAccountByIdResult result = restTemplate.postForObject(
-                "http://ts-sso-service:12349/account/findById",
+                "https://ts-sso-service:12349/account/findById",
                 info,
                 GetAccountByIdResult.class
         );
@@ -291,7 +291,7 @@ public class PreserveServiceImpl implements PreserveService{
         info.setOrderId(orderId);
         info.setTypeIndex(assuranceType);
         AddAssuranceResult result = restTemplate.postForObject(
-                "http://ts-assurance-service:18888/assurance/create",
+                "https://ts-assurance-service:18888/assurance/create",
                 info,
                 AddAssuranceResult.class
         );
@@ -302,20 +302,22 @@ public class PreserveServiceImpl implements PreserveService{
         System.out.println("[Preserve Service][Get Station Name]");
         QueryForId queryForId = new QueryForId();
         queryForId.setName(stationName);
-        String stationId = restTemplate.postForObject("http://ts-station-service:12345/station/queryForId",queryForId,String.class);
+        String stationId = restTemplate.postForObject(
+                "https://ts-station-service:12345/station/queryForId",queryForId,String.class);
         return stationId;
     }
 
     private CheckResult checkSecurity(CheckInfo info){
         System.out.println("[Preserve Service][Check Security] Checking....");
-        CheckResult result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
+        CheckResult result = restTemplate.postForObject(
+                "https://ts-security-service:11188/security/check",info,CheckResult.class);
         return result;
     }
 
     private VerifyResult verifySsoLogin(String loginToken){
         System.out.println("[Preserve Service][Verify Login] Verifying....");
         VerifyResult tokenResult = restTemplate.getForObject(
-                "http://ts-sso-service:12349/verifyLoginToken/" + loginToken,
+                "https://ts-sso-service:12349/verifyLoginToken/" + loginToken,
                 VerifyResult.class);
         return tokenResult;
     }
@@ -323,7 +325,7 @@ public class PreserveServiceImpl implements PreserveService{
     private GetTripAllDetailResult getTripAllDetailInformation(GetTripAllDetailInfo gtdi){
         System.out.println("[Preserve Service][Get Trip All Detail Information] Getting....");
         GetTripAllDetailResult gtdr = restTemplate.postForObject(
-                "http://ts-travel-service:12346/travel/getTripAllDetailInfo/"
+                "https://ts-travel-service:12346/travel/getTripAllDetailInfo/"
                 ,gtdi,GetTripAllDetailResult.class);
         return gtdr;
     }
@@ -331,7 +333,7 @@ public class PreserveServiceImpl implements PreserveService{
     private GetContactsResult getContactsById(GetContactsInfo gci){
         System.out.println("[Preserve Service][Get Contacts By Id] Getting....");
         GetContactsResult gcr = restTemplate.postForObject(
-                "http://ts-contacts-service:12347/contacts/getContactsById/"
+                "https://ts-contacts-service:12347/contacts/getContactsById/"
                 ,gci,GetContactsResult.class);
         return gcr;
     }
@@ -339,7 +341,7 @@ public class PreserveServiceImpl implements PreserveService{
     private CreateOrderResult createOrder(CreateOrderInfo coi){
         System.out.println("[Preserve Service][Get Contacts By Id] Creating....");
         CreateOrderResult cor = restTemplate.postForObject(
-                "http://ts-order-service:12031/order/create/"
+                "https://ts-order-service:12031/order/create/"
                 ,coi,CreateOrderResult.class);
         return cor;
     }
@@ -347,7 +349,7 @@ public class PreserveServiceImpl implements PreserveService{
     private AddFoodOrderResult createFoodOrder(AddFoodOrderInfo afi){
         System.out.println("[Preserve Service][Add food Order] Creating....");
         AddFoodOrderResult afr = restTemplate.postForObject(
-                "http://ts-food-service:18856/food/createFoodOrder"
+                "https://ts-food-service:18856/food/createFoodOrder"
                 ,afi,AddFoodOrderResult.class);
         return afr;
     }
@@ -355,7 +357,7 @@ public class PreserveServiceImpl implements PreserveService{
     private InsertConsignRecordResult createConsign(ConsignRequest cr){
         System.out.println("[Preserve Service][Add Condign] Creating....");
         InsertConsignRecordResult icr = restTemplate.postForObject(
-                "http://ts-consign-service:16111/consign/insertConsign"
+                "https://ts-consign-service:16111/consign/insertConsign"
                 ,cr,InsertConsignRecordResult.class);
         return icr;
     }

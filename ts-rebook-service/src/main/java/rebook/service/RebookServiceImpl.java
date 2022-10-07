@@ -55,7 +55,7 @@ public class RebookServiceImpl implements RebookService{
             return rebookResult;
         }
 
-
+        //查询当前时间和旧订单乘车时间，根据时间来判断能否改签，发车两小时后不能改签
         if(!checkTime(order.getTravelDate(),order.getTravelTime())){
             rebookResult.setStatus(false);
             rebookResult.setMessage("You can only change the ticket before the train start or within 2 hours after the train start.");
@@ -63,7 +63,8 @@ public class RebookServiceImpl implements RebookService{
             return rebookResult;
         }
 
-
+        //改签不能更换出发地和目的地，只能更改车次、席位、时间
+        //查询座位余票信息和车次的详情
         GetTripAllDetailInfo gtdi = new GetTripAllDetailInfo();
         gtdi.setFrom(queryForStationName(order.getFrom()));
         gtdi.setTo(queryForStationName(order.getTo()));
@@ -96,7 +97,8 @@ public class RebookServiceImpl implements RebookService{
         }
         Trip trip = gtdr.getTrip();
 
-
+        //处理差价，多退少补
+        //退掉原有的票，让其他人可以订到对应的位置
 //        QueryPriceInfo queryPriceInfo = new QueryPriceInfo();
 //        queryPriceInfo.setStartingPlaceId(order.getFrom());
 //        queryPriceInfo.setEndPlaceId(order.getTo());
@@ -134,7 +136,7 @@ public class RebookServiceImpl implements RebookService{
             //do nothing
             return updateOrder(order,info,gtdr,ticketPrice,loginId,loginToken);
         }else{
-
+            //补差价
             String difference = priceNew.subtract(priceOld).toString();
             rebookResult.setStatus(false);
             rebookResult.setMessage("Please pay the different money!");
@@ -207,6 +209,7 @@ public class RebookServiceImpl implements RebookService{
 
     private RebookResult updateOrder(Order order, RebookInfo info, GetTripAllDetailResult gtdr,String ticketPrice, String loginId, String loginToken){
         RebookResult rebookResult = new RebookResult();
+        //4.修改原有订单 设置order的各个信息
         Trip trip = gtdr.getTrip();
         String oldTripId = order.getTrainNumber();
         order.setTrainNumber(info.getTripId());
@@ -242,6 +245,8 @@ public class RebookServiceImpl implements RebookService{
 //        }
 
 
+        //更新订单信息
+        //原订单和新订单如果分别位于高铁动车和其他订单，应该删掉原订单，在另一边新建，用新的id
         if((tripGD(oldTripId) && tripGD(info.getTripId())) || (!tripGD(oldTripId) && !tripGD(info.getTripId()))){
             ChangeOrderInfo changeOrderInfo = new ChangeOrderInfo();
             changeOrderInfo.setLoginToken(loginToken);
@@ -259,13 +264,13 @@ public class RebookServiceImpl implements RebookService{
                 return rebookResult;
             }
         }else{
-
+            //删掉原有订单
             deleteOrder(order.getId().toString(), oldTripId);
-
+            //在另一边创建新订单
             createOrder(order,loginToken,order.getTrainNumber());
             rebookResult.setStatus(true);
             rebookResult.setMessage("Success!");
-            rebookResult.setOrder(order);
+            rebookResult.setOrder(order); //order id是不对的，因为新创建的时候，会创建新的order id
             return rebookResult;
         }
     }
@@ -278,7 +283,7 @@ public class RebookServiceImpl implements RebookService{
         seatRequest.setDestStation(endStataionId);
         seatRequest.setSeatType(seatType);
         Ticket ticket = restTemplate.postForObject(
-                "http://ts-seat-service:18898/seat/getSeat"
+                "https://ts-seat-service:18898/seat/getSeat"
                 ,seatRequest,Ticket.class);
         return ticket;
     }
@@ -293,7 +298,7 @@ public class RebookServiceImpl implements RebookService{
 
     private VerifyResult verifySsoLogin(String loginToken){
         VerifyResult tokenResult = restTemplate.getForObject(
-                "http://ts-sso-service:12349/verifyLoginToken/" + loginToken,
+                "https://ts-sso-service:12349/verifyLoginToken/" + loginToken,
                 VerifyResult.class);
         return tokenResult;
     }
@@ -333,11 +338,11 @@ public class RebookServiceImpl implements RebookService{
         GetTripAllDetailResult gtdr;
         if(tripId.startsWith("G") || tripId.startsWith("D")){
             gtdr = restTemplate.postForObject(
-                    "http://ts-travel-service:12346/travel/getTripAllDetailInfo"
+                    "https://ts-travel-service:12346/travel/getTripAllDetailInfo"
                     ,gtdi,GetTripAllDetailResult.class);
         }else{
             gtdr = restTemplate.postForObject(
-                    "http://ts-travel2-service:16346/travel2/getTripAllDetailInfo"
+                    "https://ts-travel2-service:16346/travel2/getTripAllDetailInfo"
                     ,gtdi,GetTripAllDetailResult.class);
         }
         return gtdr;
@@ -350,11 +355,11 @@ public class RebookServiceImpl implements RebookService{
         CreateOrderResult createOrderResult;
         if(tripId.startsWith("G") || tripId.startsWith("D")){
             createOrderResult = restTemplate.postForObject(
-                    "http://ts-order-service:12031/order/create"
+                    "https://ts-order-service:12031/order/create"
                     ,createOrderInfo,CreateOrderResult.class);
         }else{
             createOrderResult = restTemplate.postForObject(
-                    "http://ts-order-other-service:12032/orderOther/create"
+                    "https://ts-order-other-service:12032/orderOther/create"
                     ,createOrderInfo,CreateOrderResult.class);
         }
         return createOrderResult;
@@ -363,10 +368,10 @@ public class RebookServiceImpl implements RebookService{
     private ChangeOrderResult updateOrder(ChangeOrderInfo info, String tripId){
         ChangeOrderResult result;
         if(tripGD(tripId)){
-            result = restTemplate.postForObject("http://ts-order-service:12031/order/update",
+            result = restTemplate.postForObject("https://ts-order-service:12031/order/update",
                     info,ChangeOrderResult.class);
         }else{
-            result = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/update",
+            result = restTemplate.postForObject("https://ts-order-other-service:12032/orderOther/update",
                     info,ChangeOrderResult.class);
         }
         return result;
@@ -377,10 +382,10 @@ public class RebookServiceImpl implements RebookService{
         deleteOrderInfo.setOrderId(orderId);
         DeleteOrderResult deleteOrderResult;
         if(tripGD(tripId)){
-            deleteOrderResult = restTemplate.postForObject("http://ts-order-service:12031/order/delete",
+            deleteOrderResult = restTemplate.postForObject("https://ts-order-service:12031/order/delete",
                     deleteOrderInfo,DeleteOrderResult.class);
         }else{
-            deleteOrderResult = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/delete",
+            deleteOrderResult = restTemplate.postForObject("https://ts-order-other-service:12032/orderOther/delete",
                     deleteOrderInfo,DeleteOrderResult.class);
         }
         return deleteOrderResult;
@@ -388,13 +393,13 @@ public class RebookServiceImpl implements RebookService{
 
     private QueryOrderResult getOrderByRebookInfo(RebookInfo info){
         QueryOrderResult queryOrderResult;
-
+        //改签只能改签一次，查询订单状态来判断是否已经改签过
         if(info.getOldTripId().startsWith("G") || info.getOldTripId().startsWith("D")){
             queryOrderResult = restTemplate.postForObject(
-                    "http://ts-order-service:12031/order/getById", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
+                    "https://ts-order-service:12031/order/getById", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
         }else{
             queryOrderResult = restTemplate.postForObject(
-                    "http://ts-order-other-service:12032/orderOther/getById", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
+                    "https://ts-order-other-service:12032/orderOther/getById", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
         }
         return queryOrderResult;
     }
@@ -403,7 +408,7 @@ public class RebookServiceImpl implements RebookService{
         QueryById query = new QueryById();
         query.setStationId(stationId);
         QueryStation station = restTemplate.postForObject(
-                "http://ts-station-service:12345/station/queryById"
+                "https://ts-station-service:12345/station/queryById"
                 ,query,QueryStation.class);
         return station.getName();
     }
@@ -415,7 +420,7 @@ public class RebookServiceImpl implements RebookService{
         info.setUserId(userId);
         info.setPrice(money);
         boolean result = restTemplate.postForObject(
-                "http://ts-inside-payment-service:18673/inside_payment/payDifference"
+                "https://ts-inside-payment-service:18673/inside_payment/payDifference"
                 ,info,Boolean.class);
         return result;
     }
@@ -425,7 +430,7 @@ public class RebookServiceImpl implements RebookService{
         info.setUserId(userId);
         info.setMoney(money);
         boolean result = restTemplate.postForObject(
-                "http://ts-inside-payment-service:18673/inside_payment/drawBack"
+                "https://ts-inside-payment-service:18673/inside_payment/drawBack"
                 ,info,Boolean.class);
         return result;
     }

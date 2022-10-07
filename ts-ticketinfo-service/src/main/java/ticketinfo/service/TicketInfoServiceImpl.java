@@ -7,7 +7,9 @@ import ticketinfo.domain.QueryForStationId;
 import ticketinfo.domain.QueryForTravel;
 import ticketinfo.domain.ResultForTravel;
 
-
+/**
+ * Created by Chenjie Xu on 2017/6/6.
+ */
 @Service
 public class TicketInfoServiceImpl implements TicketInfoService{
 
@@ -17,14 +19,14 @@ public class TicketInfoServiceImpl implements TicketInfoService{
     @Override
     public ResultForTravel queryForTravel(QueryForTravel info){
         ResultForTravel result = restTemplate.postForObject(
-                "http://ts-basic-service:15680/basic/queryForTravel", info, ResultForTravel.class);
+                "https://ts-basic-service:15680/basic/queryForTravel", info, ResultForTravel.class);
         return result;
     }
 
     @Override
     public String queryForStationId(QueryForStationId info){
         String id = restTemplate.postForObject(
-                "http://ts-basic-service:15680/basic/queryForStationId", info,String.class);
+                "https://ts-basic-service:15680/basic/queryForStationId", info,String.class);
         return id;
     }
 }

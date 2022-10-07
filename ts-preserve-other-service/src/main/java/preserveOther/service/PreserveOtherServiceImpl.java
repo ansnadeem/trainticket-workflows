@@ -19,6 +19,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         OrderTicketsResult otr = new OrderTicketsResult();
         if(tokenResult.isStatus() == true){
             System.out.println("[Preserve Other Service][Verify Login] Success");
+            //1.黄牛检测
             System.out.println("[Preserve Service] [Step 1] Check Security");
             CheckInfo checkInfo = new CheckInfo();
             checkInfo.setAccountId(accountId);
@@ -31,6 +32,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 return otr;
             }
             System.out.println("[Preserve Service] [Step 1] Check Security Complete. ");
+            //2.查询联系人信息 -- 修改，通过基础信息微服务作为中介
             System.out.println("[Preserve Other Service] [Step 2] Find contacts");
             GetContactsInfo gci = new GetContactsInfo();
             System.out.println("[Preserve Other Service] [Step 2] Contacts Id:" + oti.getContactsId());
@@ -45,6 +47,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 return otr;
             }
             System.out.println("[Preserve Other Service][Step 2] Complete");
+            //3.查询座位余票信息和车次的详情
             System.out.println("[Preserve Other Service] [Step 3] Check tickets num");
             GetTripAllDetailInfo gtdi = new GetTripAllDetailInfo();
 
@@ -85,6 +88,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             }
             Trip trip = gtdr.getTrip();
             System.out.println("[Preserve Other Service] [Step 3] Tickets Enough");
+            //4.下达订单请求 设置order的各个信息
             System.out.println("[Preserve Other Service] [Step 4] Do Order");
             Contacts contacts = gcr.getContacts();
             Order order = new Order();
@@ -122,7 +126,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             query.setDepartureTime(new Date());
 
             ResultForTravel resultForTravel = restTemplate.postForObject(
-                    "http://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
+                    "https://ts-ticketinfo-service:15681/ticketinfo/queryForTravel", query ,ResultForTravel.class);
 
 
 //            String ticketPrice = getPrice(queryPriceInfo);
@@ -172,6 +176,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             otr.setStatus(true);
             otr.setMessage("Success");
             otr.setOrder(cor.getOrder());
+            //5.检查保险的选择
             if(oti.getAssurance() == 0){
                 System.out.println("[Preserve Service][Step 5] Do not need to buy assurance");
             }else{
@@ -185,6 +190,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 }
             }
 
+            //6.增加订餐
             if(oti.getFoodType() != 0){
                 AddFoodOrderInfo afoi = new AddFoodOrderInfo();
                 afoi.setOrderId(cor.getOrder().getId().toString());
@@ -206,6 +212,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 System.out.println("[Preserve Service][Step 6] Do not need to buy food");
             }
 
+            //7.增加托运
             if(null != oti.getConsigneeName() && !"".equals(oti.getConsigneeName())){
                 ConsignRequest consignRequest = new ConsignRequest();
                 consignRequest.setAccountId(cor.getOrder().getAccountId());
@@ -268,7 +275,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         seatRequest.setDestStation(endStataionId);
         seatRequest.setSeatType(seatType);
         Ticket ticket = restTemplate.postForObject(
-                "http://ts-seat-service:18898/seat/getSeat"
+                "https://ts-seat-service:18898/seat/getSeat"
                 ,seatRequest,Ticket.class);
         return ticket;
     }
@@ -276,7 +283,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     public boolean sendEmail(NotifyInfo notifyInfo){
         System.out.println("[Preserve Service][Send Email]");
         boolean result = restTemplate.postForObject(
-                "http://ts-notification-service:17853/notification/order_cancel_success",
+                "https://ts-notification-service:17853/notification/order_cancel_success",
                 notifyInfo,
                 Boolean.class
         );
@@ -286,7 +293,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     public GetAccountByIdResult getAccount(GetAccountByIdInfo info){
         System.out.println("[Cancel Order Service][Get By Id]");
         GetAccountByIdResult result = restTemplate.postForObject(
-                "http://ts-sso-service:12349/account/findById",
+                "https://ts-sso-service:12349/account/findById",
                 info,
                 GetAccountByIdResult.class
         );
@@ -299,7 +306,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         info.setOrderId(orderId);
         info.setTypeIndex(assuranceType);
         AddAssuranceResult result = restTemplate.postForObject(
-                "http://ts-assurance-service:18888/assurance/create",
+                "https://ts-assurance-service:18888/assurance/create",
                 info,
                 AddAssuranceResult.class
         );
@@ -311,26 +318,29 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         System.out.println("[Preserve Other Service][Get Station Name]");
         QueryForId queryForId = new QueryForId();
         queryForId.setName(stationName);
-        String stationId = restTemplate.postForObject("http://ts-station-service:12345/station/queryForId",queryForId,String.class);
+        String stationId = restTemplate.postForObject(
+                "https://ts-station-service:12345/station/queryForId",queryForId,String.class);
         return stationId;
     }
 
     private String getPrice(QueryPriceInfo info){
         System.out.println("[Preserve Other Service][Get Price] Checking....");
-        String price = restTemplate.postForObject("http://ts-price-service:16579/price/query",info,String.class);
+        String price = restTemplate.postForObject(
+                "https://ts-price-service:16579/price/query",info,String.class);
         return price;
     }
 
     private CheckResult checkSecurity(CheckInfo info){
         System.out.println("[Preserve Other Service][Check Security] Checking....");
-        CheckResult result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
+        CheckResult result = restTemplate.postForObject(
+                "https://ts-security-service:11188/security/check",info,CheckResult.class);
         return result;
     }
 
     private VerifyResult verifySsoLogin(String loginToken){
         System.out.println("[Preserve Other Service][Verify Login] Verifying....");
         VerifyResult tokenResult = restTemplate.getForObject(
-                "http://ts-sso-service:12349/verifyLoginToken/" + loginToken,
+                "https://ts-sso-service:12349/verifyLoginToken/" + loginToken,
                 VerifyResult.class);
         return tokenResult;
     }
@@ -338,7 +348,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     private GetTripAllDetailResult getTripAllDetailInformation(GetTripAllDetailInfo gtdi){
         System.out.println("[Preserve Other Service][Get Trip All Detail Information] Getting....");
         GetTripAllDetailResult gtdr = restTemplate.postForObject(
-                "http://ts-travel2-service:16346/travel2/getTripAllDetailInfo/"
+                "https://ts-travel2-service:16346/travel2/getTripAllDetailInfo/"
                 ,gtdi,GetTripAllDetailResult.class);
         return gtdr;
     }
@@ -346,7 +356,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     private GetContactsResult getContactsById(GetContactsInfo gci){
         System.out.println("[Preserve Other Service][Get Contacts By Id] Getting....");
         GetContactsResult gcr = restTemplate.postForObject(
-                "http://ts-contacts-service:12347/contacts/getContactsById/"
+                "https://ts-contacts-service:12347/contacts/getContactsById/"
                 ,gci,GetContactsResult.class);
         return gcr;
     }
@@ -354,7 +364,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     private CreateOrderResult createOrder(CreateOrderInfo coi){
         System.out.println("[Preserve Other Service][Get Contacts By Id] Creating....");
         CreateOrderResult cor = restTemplate.postForObject(
-                "http://ts-order-other-service:12032/orderOther/create"
+                "https://ts-order-other-service:12032/orderOther/create"
                 ,coi,CreateOrderResult.class);
         return cor;
     }
@@ -362,7 +372,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     private AddFoodOrderResult createFoodOrder(AddFoodOrderInfo afi){
         System.out.println("[Preserve Service][Add food Order] Creating....");
         AddFoodOrderResult afr = restTemplate.postForObject(
-                "http://ts-food-service:18856/food/createFoodOrder"
+                "https://ts-food-service:18856/food/createFoodOrder"
                 ,afi,AddFoodOrderResult.class);
         return afr;
     }
@@ -370,7 +380,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
     private InsertConsignRecordResult createConsign(ConsignRequest cr){
         System.out.println("[Preserve Service][Add Condign] Creating....");
         InsertConsignRecordResult icr = restTemplate.postForObject(
-                "http://ts-consign-service:16111/consign/insertConsign"
+                "https://ts-consign-service:16111/consign/insertConsign"
                 ,cr,InsertConsignRecordResult.class);
         return icr;
     }

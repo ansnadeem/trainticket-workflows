@@ -20,7 +20,7 @@ public class AdminRouteServiceImpl implements AdminRouteService {
     public GetRoutesListlResult getAllRoutes(String id) {
         if(checkId(id)){
             GetRoutesListlResult result = restTemplate.getForObject(
-                    "http://ts-route-service:11178/route/queryAll",
+                    "https://ts-route-service:11178/route/queryAll",
                     GetRoutesListlResult.class);
             return result;
         }else {
@@ -43,7 +43,7 @@ public class AdminRouteServiceImpl implements AdminRouteService {
             createAndModifyRouteInfo.setStartStation(request.getStartStation());
             createAndModifyRouteInfo.setEndStation(request.getEndStation());
             CreateAndModifyRouteResult result = restTemplate.postForObject(
-                    "http://ts-route-service:11178/route/createAndModify", createAndModifyRouteInfo,CreateAndModifyRouteResult.class);
+                    "https://ts-route-service:11178/route/createAndModify", createAndModifyRouteInfo,CreateAndModifyRouteResult.class);
             return result;
         }
         else {
@@ -62,7 +62,7 @@ public class AdminRouteServiceImpl implements AdminRouteService {
             DeleteRouteInfo deleteRouteInfo = new DeleteRouteInfo();
             deleteRouteInfo.setRouteId(request.getRouteId());
             DeleteRouteResult result = restTemplate.postForObject(
-                    "http://ts-route-service:11178/route/delete", deleteRouteInfo,DeleteRouteResult.class);
+                    "https://ts-route-service:11178/route/delete", deleteRouteInfo,DeleteRouteResult.class);
             return result;
         }
         else {

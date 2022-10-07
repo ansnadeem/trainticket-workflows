@@ -23,7 +23,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         if(checkId(id)){
             System.out.println("[Admin User Service][Get All Users]");
             result = restTemplate.getForObject(
-                    "http://ts-sso-service:12349/account/findAll",
+                    "https://ts-sso-service:12349/account/findAll",
                     FindAllAccountResult.class);
         }else{
             System.out.println("[Admin User Service][Wrong Admin ID]");
@@ -41,7 +41,7 @@ public class AdminUserServiceImpl implements AdminUserService {
             adminDeleteAccountRequest.setAccountId(request.getAccountId());
 
             result = restTemplate.postForObject(
-                    "http://ts-sso-service:12349/account/admindelete", adminDeleteAccountRequest,DeleteAccountResult.class);
+                    "https://ts-sso-service:12349/account/admindelete", adminDeleteAccountRequest,DeleteAccountResult.class);
         }
         else{
             System.out.println("[Admin User Service][Wrong Admin ID]");
@@ -56,7 +56,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         ModifyAccountResult result = new ModifyAccountResult();
         if(checkId(request.getLoginId())){
             result = restTemplate.postForObject(
-                    "http://ts-sso-service:12349/account/modify", request.getModifyAccountInfo() ,ModifyAccountResult.class);
+                    "https://ts-sso-service:12349/account/modify", request.getModifyAccountInfo() ,ModifyAccountResult.class);
         }
         else{
             System.out.println("[Admin User Service][Wrong Admin ID]");
@@ -71,7 +71,7 @@ public class AdminUserServiceImpl implements AdminUserService {
         RegisterResult result = new RegisterResult();
         if(checkId(request.getLoginId())){
             result = restTemplate.postForObject(
-                    "http://ts-sso-service:12349/account/register", request ,RegisterResult.class);
+                    "https://ts-sso-service:12349/account/register", request ,RegisterResult.class);
         }
         else{
             System.out.println("[Admin User Service][Wrong Admin ID]");

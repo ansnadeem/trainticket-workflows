@@ -6,11 +6,14 @@ import consignprice.repository.ConsignPriceConfigRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.util.UUID;
+
 @Service
 public class ConsignPriceServiceImpl implements ConsignPriceService {
     @Autowired
     private ConsignPriceConfigRepository repository;
 
+    //计价
     @Override
     public double getPriceByWeightAndRegion(GetPriceDomain domain) {
         PriceConfig priceConfig = repository.findByIndex(0);
@@ -27,6 +30,7 @@ public class ConsignPriceServiceImpl implements ConsignPriceService {
         }
     }
 
+    //查询价格信息
     @Override
     public String queryPriceInformation() {
         StringBuilder sb = new StringBuilder();
@@ -43,10 +47,11 @@ public class ConsignPriceServiceImpl implements ConsignPriceService {
         return sb.toString();
     }
 
+    //创建价格
     @Override
     public boolean createAndModifyPrice(PriceConfig config) {
         System.out.println("[Consign Price Service][Create New Price Config]");
-
+        //更新price
         PriceConfig originalConfig;
         if(repository.findByIndex(0) != null)
             originalConfig = repository.findByIndex(0);

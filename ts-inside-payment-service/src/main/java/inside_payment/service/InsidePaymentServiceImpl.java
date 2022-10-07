@@ -15,7 +15,9 @@ import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-
+/**
+ * Created by Administrator on 2017/6/20.
+ */
 @Service
 public class InsidePaymentServiceImpl implements InsidePaymentService{
 
@@ -41,11 +43,11 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         GetOrderResult result;
 
         if(info.getTripId().startsWith("G") || info.getTripId().startsWith("D")){
-            result = restTemplate.postForObject("http://ts-order-service:12031/order/getById",getOrderByIdInfo,GetOrderResult.class);
+            result = restTemplate.postForObject("https://ts-order-service:12031/order/getById",getOrderByIdInfo,GetOrderResult.class);
              //result = restTemplate.postForObject(
              //       "http://ts-order-service:12031/order/price", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
         }else{
-            result = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/getById",getOrderByIdInfo,GetOrderResult.class);
+            result = restTemplate.postForObject("https://ts-order-other-service:12032/orderOther/getById",getOrderByIdInfo,GetOrderResult.class);
             //result = restTemplate.postForObject(
             //      "http://ts-order-other-service:12032/orderOther/price", new QueryOrder(info.getOrderId()),QueryOrderResult.class);
         }
@@ -62,7 +64,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             payment.setPrice(result.getOrder().getPrice());
             payment.setUserId(userId);
 
-
+            //判断一下账户余额够不够，不够要去站外支付
             List<Payment> payments = paymentRepository.findByUserId(userId);
             List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
             Iterator<Payment> paymentsIterator = payments.iterator();
@@ -82,16 +84,16 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             }
 
             if(totalExpand.compareTo(money) > 0){
-
+                //站外支付
                 OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
                 outsidePaymentInfo.setOrderId(info.getOrderId());
                 outsidePaymentInfo.setUserId(userId);
                 outsidePaymentInfo.setPrice(result.getOrder().getPrice());
 
 
-
+                /****这里异步调用第三方支付***/
                 boolean outsidePaySuccess = restTemplate.postForObject(
-                        "http://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
+                        "https://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
 //                boolean outsidePaySuccess = false;
 //                try{
 //                    System.out.println("[Payment Service][Turn To Outside Patment] Async Task Begin");
@@ -247,7 +249,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         payment.setPrice(info.getPrice());
         payment.setUserId(info.getUserId());
 
-
+        //判断一下账户余额够不够，不够要去站外支付
         List<Payment> payments = paymentRepository.findByUserId(userId);
         List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
         Iterator<Payment> paymentsIterator = payments.iterator();
@@ -267,13 +269,13 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         }
 
         if(totalExpand.compareTo(money) > 0){
-
+            //站外支付
             OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
             outsidePaymentInfo.setOrderId(info.getOrderId());
             outsidePaymentInfo.setUserId(userId);
             outsidePaymentInfo.setPrice(info.getPrice());
             boolean outsidePaySuccess = restTemplate.postForObject(
-                    "http://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
+                    "https://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
             if(outsidePaySuccess){
                 payment.setType(PaymentType.E);
                 paymentRepository.save(payment);
@@ -304,10 +306,10 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         ModifyOrderStatusResult result;
         if(tripId.startsWith("G") || tripId.startsWith("D")){
             result = restTemplate.postForObject(
-                    "http://ts-order-service:12031/order/modifyOrderStatus", info, ModifyOrderStatusResult.class);
+                    "https://ts-order-service:12031/order/modifyOrderStatus", info, ModifyOrderStatusResult.class);
         }else{
             result = restTemplate.postForObject(
-                    "http://ts-order-other-service:12032/orderOther/modifyOrderStatus", info, ModifyOrderStatusResult.class);
+                    "https://ts-order-other-service:12032/orderOther/modifyOrderStatus", info, ModifyOrderStatusResult.class);
         }
         return result;
     }

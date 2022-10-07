@@ -24,7 +24,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         GetAllContactsResult result ;
         if(adminID.equals(loginId)){
             result = restTemplate.getForObject(
-                    "http://ts-contacts-service:12347/contacts/findAll",
+                    "https://ts-contacts-service:12347/contacts/findAll",
                     GetAllContactsResult.class);
         } else {
             result = new GetAllContactsResult();
@@ -40,7 +40,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         DeleteContactsResult result;
         if(adminID.equals(loginId)){
             result = restTemplate.postForObject(
-                    "http://ts-contacts-service:12347/contacts/deleteContacts",dci,
+                    "https://ts-contacts-service:12347/contacts/deleteContacts",dci,
                     DeleteContactsResult.class);
         } else {
             result = new DeleteContactsResult();
@@ -55,7 +55,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         ModifyContactsResult result;
         if(adminID.equals(loginId)){
             result = restTemplate.postForObject(
-                    "http://ts-contacts-service:12347/contacts/modifyContacts",mci,
+                    "https://ts-contacts-service:12347/contacts/modifyContacts",mci,
                     ModifyContactsResult.class);
         } else {
             result = new ModifyContactsResult();
@@ -71,7 +71,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         AddContactsResult result;
         if (adminID.equals(loginId)) {
             result = restTemplate.postForObject(
-                    "http://ts-contacts-service:12347/contacts/admincreate",c,
+                    "https://ts-contacts-service:12347/contacts/admincreate",c,
                     AddContactsResult.class);
 
         } else {
@@ -88,7 +88,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         GetAllStationResult result = new GetAllStationResult();;
         if (adminID.equals(loginId)) {
             List<Station> l = new ArrayList<Station>();
-            l= restTemplate.getForObject("http://ts-station-service:12345/station/query", l.getClass());
+            l= restTemplate.getForObject("https://ts-station-service:12345/station/query", l.getClass());
             result.setStatus(true);
             result.setMessage("Success");
             result.setStationList(l);
@@ -103,7 +103,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean addStation(Station s) {
         boolean result = false;
         if (adminID.equals(s.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-station-service:12345/station/create",s, Boolean.class);
+            result = restTemplate.postForObject("https://ts-station-service:12345/station/create",s, Boolean.class);
             return result;
         }
         return result;
@@ -113,7 +113,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean deleteStation(Station s) {
         boolean result = false;
         if (adminID.equals(s.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-station-service:12345/station/delete",s, Boolean.class);
+            result = restTemplate.postForObject("https://ts-station-service:12345/station/delete",s, Boolean.class);
             return result;
         }
         return result;
@@ -123,7 +123,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean modifyStation(Station s) {
         boolean result = false;
         if (adminID.equals(s.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-station-service:12345/station/update",s, Boolean.class);
+            result = restTemplate.postForObject("https://ts-station-service:12345/station/update",s, Boolean.class);
             return result;
         }
         return result;
@@ -135,7 +135,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         GetAllTrainResult result = new GetAllTrainResult();
         if (adminID.equals(loginId)) {
             List<TrainType> l = new ArrayList<TrainType>();
-            l = restTemplate.getForObject("http://ts-train-service:14567/train/query", l.getClass());
+            l = restTemplate.getForObject("https://ts-train-service:14567/train/query", l.getClass());
             result.setStatus(true);
             result.setMessage("Success");
             result.setTrainList(l);
@@ -151,7 +151,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean addTrain(TrainType t) {
         boolean result = false;
         if (adminID.equals(t.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-train-service:14567/train/create",t, Boolean.class);
+            result = restTemplate.postForObject("https://ts-train-service:14567/train/create",t, Boolean.class);
             return result;
         }
         return result;
@@ -161,7 +161,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean deleteTrain(TrainInfo2 t) {
         boolean result = false;
         if (adminID.equals(t.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-train-service:14567/train/delete",t, Boolean.class);
+            result = restTemplate.postForObject("https://ts-train-service:14567/train/delete",t, Boolean.class);
             return result;
         }
         return result;
@@ -171,7 +171,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean modifyTrain(TrainType t) {
         boolean result = false;
         if (adminID.equals(t.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-train-service:14567/train/update",t, Boolean.class);
+            result = restTemplate.postForObject("https://ts-train-service:14567/train/update",t, Boolean.class);
             return result;
         }
         return result;
@@ -183,7 +183,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
         GetAllConfigResult result = new GetAllConfigResult();
         if (adminID.equals(loginId)) {
             List<Config> l = new ArrayList<Config>();
-            l = restTemplate.getForObject("http://ts-config-service:15679/config/queryAll", l.getClass());
+            l = restTemplate.getForObject("https://ts-config-service:15679/config/queryAll", l.getClass());
             result.setStatus(true);
             result.setMessage("Success");
             result.setConfigs(l);
@@ -199,7 +199,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public String addConfig(Config c) {
         String result = null;
         if (adminID.equals(c.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-config-service:15679/config/create",c, String.class);
+            result = restTemplate.postForObject("https://ts-config-service:15679/config/create",c, String.class);
             return result;
         }
         return result;
@@ -209,7 +209,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public String deleteConfig(ConfigInfo2 ci) {
         String result = null;
         if (adminID.equals(ci.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-config-service:15679/config/delete",ci, String.class);
+            result = restTemplate.postForObject("https://ts-config-service:15679/config/delete",ci, String.class);
             return result;
         }
         return result;
@@ -219,7 +219,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public String modifyConfig(Config c) {
         String result = null;
         if (adminID.equals(c.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-config-service:15679/config/update",c, String.class);
+            result = restTemplate.postForObject("https://ts-config-service:15679/config/update",c, String.class);
             return result;
         }
         return result;
@@ -230,7 +230,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public GetAllPriceResult getAllPrices(String loginId) {
         GetAllPriceResult result = new GetAllPriceResult();
         if (adminID.equals(loginId)) {
-            result = restTemplate.getForObject("http://ts-price-service:16579/price/queryAll", GetAllPriceResult.class);
+            result = restTemplate.getForObject("https://ts-price-service:16579/price/queryAll", GetAllPriceResult.class);
             System.out.println("[!!!!GetAllPriceResult] " + result.getPriceConfig());
             return result;
         } else {
@@ -244,7 +244,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public ReturnSinglePriceConfigResult addPrice(PriceInfo pi) {
         ReturnSinglePriceConfigResult result = new ReturnSinglePriceConfigResult();
         if (adminID.equals(pi.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-price-service:16579/price/create",pi, ReturnSinglePriceConfigResult.class);
+            result = restTemplate.postForObject("https://ts-price-service:16579/price/create",pi, ReturnSinglePriceConfigResult.class);
             return result;
         } else {
             result.setStatus(false);
@@ -257,7 +257,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean deletePrice(PriceInfo pi) {
         boolean result = false;
         if (adminID.equals(pi.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-price-service:16579/price/delete",pi, Boolean.class);
+            result = restTemplate.postForObject("https://ts-price-service:16579/price/delete",pi, Boolean.class);
             return result;
         }
         return result;
@@ -267,7 +267,7 @@ public class AdminBasicInfoServiceImpl implements AdminBasicInfoService{
     public boolean modifyPrice(PriceInfo pi) {
         boolean result = false;
         if (adminID.equals(pi.getLoginId())) {
-            result = restTemplate.postForObject("http://ts-price-service:16579/price/update",pi, Boolean.class);
+            result = restTemplate.postForObject("https://ts-price-service:16579/price/update",pi, Boolean.class);
             return result;
         }
         return result;

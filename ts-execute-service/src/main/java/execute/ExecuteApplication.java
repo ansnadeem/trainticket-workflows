@@ -18,9 +18,9 @@ public class ExecuteApplication {
     public static void main(String[] args) throws Exception {
         SpringApplication.run(ExecuteApplication.class, args);
     }
-
-    @Bean
-    public RestTemplate restTemplate(RestTemplateBuilder builder) {
-        return builder.build();
-    }
+//
+//    @Bean
+//    public RestTemplate restTemplate(RestTemplateBuilder builder) {
+//        return builder.build();
+//    }
 }
