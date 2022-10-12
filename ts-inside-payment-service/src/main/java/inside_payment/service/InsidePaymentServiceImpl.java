@@ -8,13 +8,11 @@ import inside_payment.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 
 @Service
 public class InsidePaymentServiceImpl implements InsidePaymentService{
@@ -62,7 +60,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             payment.setPrice(result.getOrder().getPrice());
             payment.setUserId(userId);
 
-
+            //Check enough to pay. Not enough, outside payment.
             List<Payment> payments = paymentRepository.findByUserId(userId);
             List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
             Iterator<Payment> paymentsIterator = payments.iterator();
@@ -82,30 +80,42 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             }
 
             if(totalExpand.compareTo(money) > 0){
-
+                //Outsite payment
                 OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
                 outsidePaymentInfo.setOrderId(info.getOrderId());
                 outsidePaymentInfo.setUserId(userId);
                 outsidePaymentInfo.setPrice(result.getOrder().getPrice());
+                
+
+                /********************* Fault Reproduce - Ts Error External Normal *****************/
+//                boolean outsidePaySuccess = restTemplate.postForObject(
+//                        "http://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
+                boolean outsidePaySuccess = false;
+                try{
+                    System.out.println("[Payment Service][Turn To Outside Patment] Async Task Begin");
+                    Future<Boolean> task = asyncTask.sendAsyncCallToPaymentService(outsidePaymentInfo);
+//                    if(new Random().nextBoolean() == true){
+                        //External service timeout
+                        outsidePaySuccess = task.get(2000,TimeUnit.MILLISECONDS).booleanValue();
+//                    }else{
+//                        //External service timeout normal
+//                        outsidePaySuccess = task.get(6000,TimeUnit.MILLISECONDS).booleanValue();
+//                    }
+                }catch (Exception e){
+                    System.out.println("[Inside Payment][Turn to Outside Payment] External Service Timeout.");
+                    //e.printStackTrace();
+                    outsidePaySuccess = false;
+                    //return false;
+                }
+
+                if(outsidePaySuccess == false){
+                    throw new RuntimeException("[Error External Normal]");
+                }
 
 
+                System.out.println("[Inside Payment][Turn to Outside Payment] External Service Success.");
 
-                boolean outsidePaySuccess = restTemplate.postForObject(
-                        "http://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
-//                boolean outsidePaySuccess = false;
-//                try{
-//                    System.out.println("[Payment Service][Turn To Outside Patment] Async Task Begin");
-//                    Future<Boolean> task = asyncTask.sendAsyncCallToPaymentService(outsidePaymentInfo);
-//                    outsidePaySuccess = task.get(2000,TimeUnit.MILLISECONDS).booleanValue();
-//
-//                }catch (Exception e){
-//                    System.out.println("[Inside Payment][Turn to Outside Payment] Time Out.");
-//                    //e.printStackTrace();
-//                    return false;
-//                }
-
-
-
+                /*********************************************************************************/
 
                 if(outsidePaySuccess){
                     payment.setType(PaymentType.O);
@@ -247,7 +257,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         payment.setPrice(info.getPrice());
         payment.setUserId(info.getUserId());
 
-
+        //Check is enough to pay - go outside payment?
         List<Payment> payments = paymentRepository.findByUserId(userId);
         List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
         Iterator<Payment> paymentsIterator = payments.iterator();
@@ -267,7 +277,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         }
 
         if(totalExpand.compareTo(money) > 0){
-
+            //Outside payment
             OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
             outsidePaymentInfo.setOrderId(info.getOrderId());
             outsidePaymentInfo.setUserId(userId);
