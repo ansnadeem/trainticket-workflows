@@ -5,6 +5,9 @@ server:
 spring:
   application:
     name: ts-order-other-service
+  redis:
+    host: redis
+    port: 6379
   data:
     mongodb:
       host: ts-order-other-mongo

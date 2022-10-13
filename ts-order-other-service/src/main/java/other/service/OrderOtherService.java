@@ -41,4 +41,14 @@ public interface OrderOtherService {
     AddOrderResult addNewOrder(Order order);
 
     UpdateOrderResult updateOrder(Order order);
+
+    QueryOrderResult getAllOrdersAsync();
+
+    boolean cancelSuspend(String fromId,String toId);
+
+    boolean suspend(String fromId,String toId);
+
+    SuspendArea getSuspendArea();
+
+    String getStatusDescription();
 }
