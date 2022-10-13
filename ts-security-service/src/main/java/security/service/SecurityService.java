@@ -14,4 +14,6 @@ public interface SecurityService {
 
     CheckResult check(CheckInfo info);
 
+    boolean callInsidePayment(CallInsidePaymentInfo info);
+
 }

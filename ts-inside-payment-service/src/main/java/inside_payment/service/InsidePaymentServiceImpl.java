@@ -3,19 +3,22 @@ package inside_payment.service;
 import inside_payment.async.AsyncTask;
 import inside_payment.domain.*;
 import inside_payment.repository.AddMoneyRepository;
+import inside_payment.repository.DrawBackRepository;
 import inside_payment.repository.PaymentRepository;
 import inside_payment.util.CookieUtil;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
-
 import javax.servlet.http.HttpServletRequest;
 import java.math.BigDecimal;
 import java.util.*;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 
-
+/**
+ * Created by Administrator on 2017/6/20.
+ */
 @Service
 public class InsidePaymentServiceImpl implements InsidePaymentService{
 
@@ -29,7 +32,14 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
     public RestTemplate restTemplate;
 
     @Autowired
-    private AsyncTask asyncTask;
+    public DrawBackRepository drawBackRepository;
+
+    @Autowired
+    AsyncTask asyncTask;
+
+    public boolean enableAutoCheck = false;
+
+    public final AtomicLong equal = new AtomicLong();
 
     @Override
     public boolean pay(PaymentInfo info, HttpServletRequest request){
@@ -62,7 +72,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             payment.setPrice(result.getOrder().getPrice());
             payment.setUserId(userId);
 
-
+            //判断一下账户余额够不够，不够要去站外支付
             List<Payment> payments = paymentRepository.findByUserId(userId);
             List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
             Iterator<Payment> paymentsIterator = payments.iterator();
@@ -82,31 +92,16 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
             }
 
             if(totalExpand.compareTo(money) > 0){
-
+                //站外支付
                 OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
                 outsidePaymentInfo.setOrderId(info.getOrderId());
                 outsidePaymentInfo.setUserId(userId);
                 outsidePaymentInfo.setPrice(result.getOrder().getPrice());
 
 
-
+                /****这里异步调用第三方支付***/
                 boolean outsidePaySuccess = restTemplate.postForObject(
                         "http://ts-payment-service:19001/payment/pay", outsidePaymentInfo,Boolean.class);
-//                boolean outsidePaySuccess = false;
-//                try{
-//                    System.out.println("[Payment Service][Turn To Outside Patment] Async Task Begin");
-//                    Future<Boolean> task = asyncTask.sendAsyncCallToPaymentService(outsidePaymentInfo);
-//                    outsidePaySuccess = task.get(2000,TimeUnit.MILLISECONDS).booleanValue();
-//
-//                }catch (Exception e){
-//                    System.out.println("[Inside Payment][Turn to Outside Payment] Time Out.");
-//                    //e.printStackTrace();
-//                    return false;
-//                }
-
-
-
-
                 if(outsidePaySuccess){
                     payment.setType(PaymentType.O);
                     paymentRepository.save(payment);
@@ -224,18 +219,91 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
     }
 
     @Override
-    public boolean drawBack(DrawBackInfo info){
+    public boolean drawBack(DrawBackInfo info)  {
+        equal.set(0);
+        //设置订单状态为已退款
+        GetOrderByIdInfo getOrderInfo = new GetOrderByIdInfo();
+        System.out.println();
+        System.out.println("info.getOrderId()"+info.getOrderId());
+        System.out.println();
+        getOrderInfo.setOrderId(info.getOrderId());
+        GetOrderResult cor = restTemplate.postForObject(
+                "http://ts-order-other-service:12032/orderOther/getById/"
+                ,getOrderInfo,GetOrderResult.class);
+        Order order = cor.getOrder();
+
+        order.setStatus(OrderStatus.CANCEL.getCode());
+        ChangeOrderInfo changeOrderInfo = new ChangeOrderInfo();
+        changeOrderInfo.setOrder(order);
+        changeOrderInfo.setLoginToken(info.getLoginToken());
+        ChangeOrderResult changeOrderResult = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/update",changeOrderInfo,ChangeOrderResult.class);
+
+        //退款记录
+        DrawBack drawBack = new DrawBack();
+        drawBack.setLoginToken(info.getLoginToken());
+        drawBack.setMoney(info.getMoney());
+        drawBack.setOrderId(info.getOrderId());
+        drawBack.setUserId(info.getUserId());
+
+        drawBackRepository.save(drawBack);
+
+//        CallInsidePaymentInfo callInsidePaymentInfo = new CallInsidePaymentInfo();
+//        callInsidePaymentInfo.setTime(Math.random()*8);
+//        try{
+//            Thread.sleep((long)callInsidePaymentInfo.getTime());
+//        }catch(InterruptedException e){
+//            e.printStackTrace();
+//        }
+//
+//        restTemplate.postForObject("http://ts-security-service:11188/security/callInsidePayment",
+//                callInsidePaymentInfo , Boolean.class);
+
+
         if(addMoneyRepository.findByUserId(info.getUserId()) != null){
             AddMoney addMoney = new AddMoney();
             addMoney.setUserId(info.getUserId());
             addMoney.setMoney(info.getMoney());
             addMoney.setType(AddMoneyType.D);
             addMoneyRepository.save(addMoney);
+
+            try {
+                System.out.println("一条应该走上的道路");
+                if(enableAutoCheck == false){
+                    //If do not recheck do nothing
+                }else{
+                    Future<ChangeOrderResult> changeOrderResultFuture = asyncTask.reCalculateRefundMoney(info.getOrderId(), info.getMoney(), info.getLoginToken());
+                    ChangeOrderResult changeOrderResult1 = changeOrderResultFuture.get();
+//                reCalculateRefundMoney(info.getOrderId(), info.getMoney(), info.getLoginToken());
+                    System.out.println("reCalculateRefundMoney:Done");
+                }
+
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            } catch (ExecutionException e){
+                e.printStackTrace();
+            }
+
+
             return true;
         }else{
+            try {
+//                Future<ChangeOrderResult> changeOrderResultFuture = asyncTask.reCalculateRefundMoney(info.getOrderId(), info.getMoney(), info.getLoginToken());
+////                ChangeOrderResult changeOrderResult1 = changeOrderResultFuture.get();
+//                while(!changeOrderResultFuture.isDone()){
+//
+//                }
+                System.out.println("一条不该走上的道路");
+                reCalculateRefundMoney(info.getOrderId(), info.getMoney(), info.getLoginToken());
+                System.out.println("reCalculateRefundMoney:Done");
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
             return false;
         }
+
+
     }
+
 
     @Override
     public boolean payDifference(PaymentDifferenceInfo info, HttpServletRequest request){
@@ -247,7 +315,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         payment.setPrice(info.getPrice());
         payment.setUserId(info.getUserId());
 
-
+        //判断一下账户余额够不够，不够要去站外支付
         List<Payment> payments = paymentRepository.findByUserId(userId);
         List<AddMoney> addMonies = addMoneyRepository.findByUserId(userId);
         Iterator<Payment> paymentsIterator = payments.iterator();
@@ -267,7 +335,7 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         }
 
         if(totalExpand.compareTo(money) > 0){
-
+            //站外支付
             OutsidePaymentInfo outsidePaymentInfo = new OutsidePaymentInfo();
             outsidePaymentInfo.setOrderId(info.getOrderId());
             outsidePaymentInfo.setUserId(userId);
@@ -320,6 +388,90 @@ public class InsidePaymentServiceImpl implements InsidePaymentService{
         }else{
             System.out.println("[Inside Payment Service][Init Payment] Already Exists:" + payment.getId());
         }
+    }
+
+    @Override
+    public boolean check(){
+
+        List<DrawBack> drawBacks = drawBackRepository.findAll();
+        drawBacks.forEach(n -> {
+            GetOrderByIdInfo getOrderInfo = new GetOrderByIdInfo();
+            getOrderInfo.setOrderId(n.getOrderId());
+            GetOrderResult cor = restTemplate.postForObject(
+                    "http://ts-order-other-service:12032/orderOther/getById/"
+                    ,getOrderInfo,GetOrderResult.class);
+            Order order = cor.getOrder();
+
+            order.setStatus(OrderStatus.CANCEL.getCode());
+            ChangeOrderInfo changeOrderInfo = new ChangeOrderInfo();
+            changeOrderInfo.setOrder(order);
+            changeOrderInfo.setLoginToken(n.getLoginToken());
+            ChangeOrderResult changeOrderResult = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/update",
+                    changeOrderInfo,ChangeOrderResult.class);
+        });
+        return true;
+    }
+
+    @Override
+    public boolean equal(){
+        if(equal.get() == 1){
+            equal.set(2);
+        }else if(equal.get() == 2){
+            equal.set(1);
+        }
+        return true;
+    }
+
+    private ChangeOrderResult reCalculateRefundMoney(String orderId, String money, String loginToken) throws InterruptedException{
+        ChangeOrderResult changeOrderResult = null;
+        CancelOrderInfo info = new CancelOrderInfo();
+        info.setOrderId(orderId);
+        String result = restTemplate.postForObject("http://ts-cancel-service:18885/cancelCalculateRefund2",info,String.class);
+
+        System.out.println();
+        System.out.println("money:"+money);
+        System.out.println("result.getRefund():"+result);
+        System.out.println();
+
+        if(!result.equals(money)){
+            equal.set(2);
+            Thread.sleep(20000);
+            DrawBack drawBack = drawBackRepository.findByOrderId(orderId);
+
+            addMoneyRepository.deleteByUserIdAndMoney(drawBack.getUserId(),money);
+
+            AddMoney addMoney = new AddMoney();
+            addMoney.setUserId(drawBack.getUserId());
+            addMoney.setMoney(result);
+            addMoney.setType(AddMoneyType.D);
+            addMoneyRepository.save(addMoney);
+
+            //设置订单状态为已退款
+            GetOrderByIdInfo getOrderInfo = new GetOrderByIdInfo();
+            getOrderInfo.setOrderId(orderId);
+            GetOrderResult cor = restTemplate.postForObject(
+                    "http://ts-order-other-service:12032/orderOther/getById"
+                    ,getOrderInfo,GetOrderResult.class);
+            Order order = cor.getOrder();
+
+
+            order.setStatus(OrderStatus.CANCEL.getCode());
+            ChangeOrderInfo changeOrderInfo = new ChangeOrderInfo();
+            changeOrderInfo.setOrder(order);
+            changeOrderInfo.setLoginToken(loginToken);
+            System.out.println();
+            System.out.println("http://ts-order-other-service:12032/orderOther/update before");
+            System.out.println();
+            changeOrderResult = restTemplate.postForObject("http://ts-order-other-service:12032/orderOther/update",changeOrderInfo,ChangeOrderResult.class);
+            System.out.println();
+            System.out.println("http://ts-order-other-service:12032/orderOther/update after");
+            System.out.println();
+        }else{
+            equal.set(1);
+            changeOrderResult = new ChangeOrderResult();
+            changeOrderResult.setStatus(false);
+        }
+        return changeOrderResult;
     }
 
 //    private boolean sendOrderCreateEmail(){
