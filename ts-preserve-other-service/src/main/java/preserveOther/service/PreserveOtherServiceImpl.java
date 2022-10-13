@@ -1,14 +1,16 @@
 package preserveOther.service;
 
+import com.google.gson.Gson;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import preserveOther.domain.*;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.UUID;
 
 @Service
-public class PreserveOtherServiceImpl implements PreserveOtherService{
+public class PreserveOtherServiceImpl implements PreserveOtherService {
 
     @Autowired
     private RestTemplate restTemplate;
@@ -19,6 +21,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         OrderTicketsResult otr = new OrderTicketsResult();
         if(tokenResult.isStatus() == true){
             System.out.println("[Preserve Other Service][Verify Login] Success");
+            //1.Ticket hold number check
             System.out.println("[Preserve Service] [Step 1] Check Security");
             CheckInfo checkInfo = new CheckInfo();
             checkInfo.setAccountId(accountId);
@@ -31,20 +34,75 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 return otr;
             }
             System.out.println("[Preserve Service] [Step 1] Check Security Complete. ");
-            System.out.println("[Preserve Other Service] [Step 2] Find contacts");
-            GetContactsInfo gci = new GetContactsInfo();
-            System.out.println("[Preserve Other Service] [Step 2] Contacts Id:" + oti.getContactsId());
-            gci.setContactsId(oti.getContactsId());
-            gci.setLoginToken(loginToken);
-            GetContactsResult gcr = getContactsById(gci);
-            if(gcr.isStatus() == false){
-                System.out.println("[Preserve Other Service][Get Contacts] Fail." + gcr.getMessage());
-                otr.setStatus(false);
-                otr.setMessage(gcr.getMessage());
-                otr.setOrder(null);
-                return otr;
+            //2.search info about contacts
+            /***************** For Fault Reproduction - Error Normal (modify)*********************/
+//            System.out.println("[Preserve Other Service] [Step 2] Find contacts");
+//            GetContactsInfo gci = new GetContactsInfo();
+//            System.out.println("[Preserve Other Service] [Step 2] Contacts Id:" + oti.getContactsId());
+//            gci.setContactsId(oti.getContactsId());
+//            gci.setLoginToken(loginToken);
+//            GetContactsResult gcr = getContactsById(gci);
+//            if(gcr.isStatus() == false){
+//                System.out.println("[Preserve Other Service][Get Contacts] Fail." + gcr.getMessage());
+//                otr.setStatus(false);
+//                otr.setMessage(gcr.getMessage());
+//                otr.setOrder(null);
+//                return otr;
+//            }
+//            System.out.println("[Preserve Other Service][Step 2] Complete");
+            Contacts orderContact = null;
+
+            Gson gson = new Gson();
+            String otiString = gson.toJson(oti);
+            System.out.println("[Print oti]:" + otiString);
+
+
+            AddContactsResult addContactsResult = null;
+
+
+            if(oti.getIsCreateContacts().equals("true")){
+
+
+                System.out.println("[Preserve Service]Ready to create contact ");
+                int contactsNum = calculateContacts(accountId);
+
+                String name = oti.getContactsName();
+                int type = oti.getContactsDocumentType();
+                String number = oti.getContactsDocumentNumber();
+                String phone = oti.getContactsPhoneNumber();
+
+
+                if(contactsNum > 0){
+                    System.out.println("[Preserve Service]Create Contacts WITH CHECK ");
+                    addContactsResult = addContactsWithCheck(name,type,number,phone,accountId);
+                }else{
+                    System.out.println("[Preserve Service]Create Contacts WITHOUT CHECK");
+                    addContactsResult = addContactsWithoutCheck(name,type,number,phone,accountId);
+                }
+                orderContact = addContactsResult.getContacts();
+
+            }else{
+                System.out.println("[Preserve Other Service] [Step 2] Find contacts");
+                GetContactsInfo gci = new GetContactsInfo();
+                System.out.println("[Preserve Other Service] [Step 2] Contacts Id:" + oti.getContactsId());
+                gci.setContactsId(oti.getContactsId());
+                gci.setLoginToken(loginToken);
+                GetContactsResult gcr = getContactsById(gci);
+                orderContact = gcr.getContacts();
+                if(gcr.isStatus() == false){
+                    System.out.println("[Preserve Other Service][Get Contacts] Fail." + gcr.getMessage());
+                    otr.setStatus(false);
+                    otr.setMessage(gcr.getMessage());
+                    otr.setOrder(null);
+                    return otr;
+                }
             }
+
+
             System.out.println("[Preserve Other Service][Step 2] Complete");
+            /*********************************************************************************************/
+
+            //3.Search seats that available
             System.out.println("[Preserve Other Service] [Step 3] Check tickets num");
             GetTripAllDetailInfo gtdi = new GetTripAllDetailInfo();
 
@@ -56,16 +114,16 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             System.out.println("[Preserve Other Service] [Step 3] TripId:" + oti.getTripId());
             GetTripAllDetailResult gtdr = getTripAllDetailInformation(gtdi);
             if(gtdr.isStatus() == false){
-                System.out.println("[Preserve Other Service][Search For Trip Detail Information] " + gcr.getMessage());
+                System.out.println("[Preserve Other Service][Search For Trip Detail Information] " + gtdr.getMessage());
                 otr.setStatus(false);
-                otr.setMessage(gcr.getMessage());
+                otr.setMessage(gtdr.getMessage());
                 otr.setOrder(null);
                 return otr;
             }else{
                 TripResponse tripResponse = gtdr.getTripResponse();
                 if(oti.getSeatType() == SeatClass.FIRSTCLASS.getCode()){
                     if(tripResponse.getConfortClass() == 0){
-                        System.out.println("[Preserve Other Service][Check seat is enough] " + gcr.getMessage());
+                        System.out.println("[Preserve Other Service][Check seat is enough] " + gtdr.getMessage());
                         otr.setStatus(false);
                         otr.setMessage("Seat Not Enough");
                         otr.setOrder(null);
@@ -74,7 +132,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 }else{
                     if(tripResponse.getEconomyClass() == SeatClass.SECONDCLASS.getCode()){
                         if(tripResponse.getConfortClass() == 0){
-                            System.out.println("[Preserve Other Service][Check seat is enough] " + gcr.getMessage());
+                            System.out.println("[Preserve Other Service][Check seat is enough] " + gtdr.getMessage());
                             otr.setStatus(false);
                             otr.setMessage("Seat Not Enough");
                             otr.setOrder(null);
@@ -85,8 +143,12 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             }
             Trip trip = gtdr.getTrip();
             System.out.println("[Preserve Other Service] [Step 3] Tickets Enough");
+            //4.Create for order
             System.out.println("[Preserve Other Service] [Step 4] Do Order");
-            Contacts contacts = gcr.getContacts();
+            /***************** For Fault Reproduction - Error Normal (modify)*********************/
+            //Contacts contacts = gtdr.getContacts();
+            Contacts contacts = orderContact;
+            /*************************************************************************************/
             Order order = new Order();
             order.setId(UUID.randomUUID());
             order.setTrainNumber(oti.getTripId());
@@ -172,6 +234,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             otr.setStatus(true);
             otr.setMessage("Success");
             otr.setOrder(cor.getOrder());
+            //5.assurance
             if(oti.getAssurance() == 0){
                 System.out.println("[Preserve Service][Step 5] Do not need to buy assurance");
             }else{
@@ -185,6 +248,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 }
             }
 
+            //6.Add food
             if(oti.getFoodType() != 0){
                 AddFoodOrderInfo afoi = new AddFoodOrderInfo();
                 afoi.setOrderId(cor.getOrder().getId().toString());
@@ -206,6 +270,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 System.out.println("[Preserve Service][Step 6] Do not need to buy food");
             }
 
+            //7.Add delivery
             if(null != oti.getConsigneeName() && !"".equals(oti.getConsigneeName())){
                 ConsignRequest consignRequest = new ConsignRequest();
                 consignRequest.setAccountId(cor.getOrder().getAccountId());
@@ -228,7 +293,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 System.out.println("[Preserve Service][Step 7] Do not need to consign");
             }
 
-            //8.发送notification
+            //8.notification
             System.out.println("[Preserve Service]");
             GetAccountByIdInfo getAccountByIdInfo = new GetAccountByIdInfo();
             getAccountByIdInfo.setAccountId(order.getAccountId().toString());
@@ -251,6 +316,12 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
             notifyInfo.setStartingTime(order.getTravelTime().toString());
 
             sendEmail(notifyInfo);
+
+//            /**********If user create a contact with duplicate ID，throw exception***********/
+//            if(oti.getIsCreateContacts().equals("true") && addContactsResult.isExists() == true){
+//                throw new RuntimeException("[Normal Error] Reproduction Of Error Normal");
+//            }
+
         }else{
             System.out.println("[Preserve Other Service][Verify Login] Fail");
             otr.setStatus(false);
@@ -321,11 +392,7 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
         return price;
     }
 
-    private CheckResult checkSecurity(CheckInfo info){
-        System.out.println("[Preserve Other Service][Check Security] Checking....");
-        CheckResult result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
-        return result;
-    }
+
 
     private VerifyResult verifySsoLogin(String loginToken){
         System.out.println("[Preserve Other Service][Verify Login] Verifying....");
@@ -374,4 +441,69 @@ public class PreserveOtherServiceImpl implements PreserveOtherService{
                 ,cr,InsertConsignRecordResult.class);
         return icr;
     }
+
+
+    /***************** For Fault Reproduction - Error Normal (delete and add)*********************/
+    private AddContactsResult addContactsWithoutCheck(String name,int type,String number,String phone,String loginId){
+        System.out.println("[Preserve Other Service][Add Contacts Without Check]");
+        AddContactsInfo info = new AddContactsInfo();
+        info.setDocumentNumber(number);
+        info.setDocumentType(type);
+        info.setName(name);
+        info.setPhoneNumber(phone);
+        AddContactsResult addContactsResult = restTemplate.postForObject(
+                "http://ts-contacts-service:12347/contacts/createWithoutCheck/" + loginId,
+                info,AddContactsResult.class);
+        return addContactsResult;
+    }
+
+    private AddContactsResult addContactsWithCheck(String name,int type,String number,String phone,String loginId){
+        System.out.println("[Preserve Other Service][Add Contacts With Check]");
+        AddContactsInfo info = new AddContactsInfo();
+        info.setDocumentNumber(number);
+        info.setDocumentType(type);
+        info.setName(name);
+        info.setPhoneNumber(phone);
+        AddContactsResult addContactsResult = restTemplate.postForObject(
+                "http://ts-contacts-service:12347/contacts/createWithCheck/" + loginId,info,AddContactsResult.class);
+        return addContactsResult;
+    }
+
+    private int calculateContacts(String loginId){
+        System.out.println("[Preserve Other Service][Calculate Contacts]");
+        ArrayList<Contacts> list = restTemplate.getForObject(
+                "http://ts-contacts-service:12347/contacts/countContacts/" + loginId,
+                ArrayList.class);
+        if(list == null){
+            return 0;
+        }else{
+            return list.size();
+        }
+    }
+
+//    private CheckResult checkSecurity(CheckInfo info){
+//        System.out.println("[Preserve Other Service][Check Security] Checking....");
+//        CheckResult result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
+//        return result;
+//    }
+
+    public static int count = 0;
+
+    private CheckResult checkSecurity(CheckInfo info){
+        System.out.println("[Preserve Other Service][Check Security] Checking....");
+        CheckResult result  = null;
+        if(count == 0){
+            result = restTemplate.postForObject("http://ts-security-service:11188/security/checkInOneHour",info,CheckResult.class);
+        }else if(count == 1){
+            result = restTemplate.postForObject("http://ts-security-service:11188/security/checkTotalNumber",info,CheckResult.class);
+        }else{
+            result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
+        }
+        count++;
+//        CheckResult result = restTemplate.postForObject("http://ts-security-service:11188/security/check",info,CheckResult.class);
+        return result;
+    }
+
+    /*****************************************************************************/
+
 }
