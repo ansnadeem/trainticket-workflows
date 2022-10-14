@@ -253,7 +253,7 @@ function initFoodSelect(tripId){
 
                 if(null == result.trainFoodList || result.trainFoodList.length == 0){
                     //没有
-                    $('#train-food-option').disabled(true);
+                    // $('#train-food-option').disabled(true);
                 } else {
                     var trainFoodList = result.trainFoodList[0]['foodList'];
                     console.log("trainFoodList:" );
@@ -285,7 +285,7 @@ function initFoodSelect(tripId){
                 var opt3 = document.createElement ("option");
                 opt3.value = 0;
                 opt3.innerText = "-- --";
-                foodStationSelect.appendChild(opt1);
+                foodStationSelect.appendChild(opt3);
                 var fsindex = 1;
                 for(var key in  preserveFoodStoreListMap){
                     var opt4 = document.createElement ("option");
