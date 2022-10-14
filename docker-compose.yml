@@ -558,6 +558,19 @@ services:
                   networks:
                     - my-network
 
+  ts-launcher:
+                  build: ts-launcher
+                  image: ts/ts-launcher
+                  restart: always
+                  ports:
+                    - 12898:12898
+                  deploy:
+                    replicas: 1
+                    restart_policy:
+                      condition: on-failure
+                  networks:
+                    - my-network
+
 networks:
     my-network:
       # driver: overlay
